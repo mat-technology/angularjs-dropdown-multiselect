@@ -1,7 +1,7 @@
 (function(angular) {
 'use strict';
 
-var directiveModule = angular.module('angularjs-dropdown-multiselect', []);
+var directiveModule = angular.module('mat-angularjs-dropdown-multiselect', []);
 
 directiveModule.directive('dmDropdownStaticInclude', ['$compile', function($compile) {
 	return function(scope, element, attrs) {
@@ -14,8 +14,9 @@ directiveModule.directive('dmDropdownStaticInclude', ['$compile', function($comp
 directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '$parse', function($filter, $document, $compile, $parse) {
 	return {
 		restrict: 'AE',
+		require: 'ngModel',
 		scope: {
-			selectedModel: '=',
+			ngModel: '=',
 			options: '=',
 			extraSettings: '=',
 			events: '=',
@@ -61,14 +62,14 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 			template += '</li>';
 
 			template += '<li class="divider" ng-show="settings.selectionLimit > 1"></li>';
-			template += '<li role="presentation" ng-show="settings.selectionLimit > 1"><a role="menuitem">{{selectedModel.length}} {{texts.selectionOf}} {{settings.selectionLimit}} {{texts.selectionCount}}</a></li>';
+			template += '<li role="presentation" ng-show="settings.selectionLimit > 1"><a role="menuitem">{{selectedLength}} {{texts.selectionOf}} {{settings.selectionLimit}} {{texts.selectionCount}}</a></li>';
 
 			template += '</ul>';
 			template += '</div>';
 
 			return template;
 		},
-		link: function($scope, $element, $attrs) {
+		link: function($scope, $element, $attrs, ngModelCtrl) {
 			var $dropdownTrigger = $element.children()[0];
 
 			$scope.toggleDropdown = function() {
@@ -164,21 +165,13 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 				});
 			}
 
-			$scope.$watch('selectedModel', function(newValue) {
-				if (!Array.isArray(newValue)) {
-					$scope.singleSelection = true;
-				} else {
-					$scope.singleSelection = false;
-				}
-			});
-
 			$scope.close = function() {
 				$scope.open = false;
 				$scope.externalEvents.onClose();
 			}
 
 			$scope.selectCurrentGroup = function(currentGroup) {
-				$scope.selectedModel.splice(0, $scope.selectedModel.length);
+				ngModelCtrl.$setViewValue([]);
 				if ($scope.orderedItems) {
 					$scope.orderedItems.forEach(function(item) {
 						if (item[$scope.groupBy] === currentGroup) {
@@ -207,16 +200,18 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 				return findObj;
 			}
 
-			function clearObject(object) {
-				for (var prop in object) {
-					delete object[prop];
-				}
+			function clearObjectViewValue() {
+					var copy = angular.copy(ngModelCtrl.$viewValue);
+					for (var prop in copy) {
+							delete copy[prop];
+					}
+					ngModelCtrl.$setViewValue(copy);
 			}
 
 			if ($scope.singleSelection) {
-				if (angular.isArray($scope.selectedModel) && $scope.selectedModel.length === 0) {
-					clearObject($scope.selectedModel);
-				}
+					if (angular.isArray(ngModelCtrl.$viewValue) && ngModelCtrl.$viewValue.length === 0) {
+							clearObjectViewValue();
+					}
 			}
 
 			if ($scope.settings.closeOnBlur) {
@@ -263,7 +258,8 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 			}
 
 			$scope.getButtonText = function() {
-				if ($scope.settings.dynamicTitle && $scope.selectedModel && ($scope.selectedModel.length > 0 || (angular.isObject($scope.selectedModel) && Object.keys($scope.selectedModel).length > 0))) {
+
+				if ($scope.settings.dynamicTitle && (ngModelCtrl.$viewValue.length > 0 || (angular.isObject(ngModelCtrl.$viewValue) && Object.keys(ngModelCtrl.$viewValue).length > 0))) {
 					if ($scope.settings.smartButtonMaxItems > 0) {
 
 						var paddingWidth = 12 * 2,
@@ -282,7 +278,7 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 							}
 						});
 
-						if ($scope.selectedModel.length > $scope.settings.smartButtonMaxItems) {
+						if (ngModelCtrl.$viewValue.length > $scope.settings.smartButtonMaxItems) {
 							itemsText = itemsText.slice(0, $scope.settings.smartButtonMaxItems);
 							itemsText.push('...');
 						}
@@ -305,9 +301,9 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 						var totalSelected;
 
 						if ($scope.singleSelection) {
-							totalSelected = ($scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp])) ? 1 : 0;
+								totalSelected = (ngModelCtrl.$viewValue !== null && angular.isDefined(ngModelCtrl.$viewValue[$scope.settings.idProp])) ? 1 : 0;
 						} else {
-							totalSelected = angular.isDefined($scope.selectedModel) ? $scope.selectedModel.length : 0;
+								totalSelected = angular.isDefined(ngModelCtrl.$viewValue) ? ngModelCtrl.$viewValue.length : 0;
 						}
 
 						if (totalSelected === 0) {
@@ -323,6 +319,10 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 				} else {
 					return $scope.texts.buttonDefaultText;
 				}
+			};
+
+			ngModelCtrl.$render = function() {
+				$scope.selectedLength = ngModelCtrl.$viewValue.length;
 			};
 
 			$scope.getPropertyForObject = function(object, property) {
@@ -354,10 +354,11 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 				}
 
 				if ($scope.singleSelection) {
-					clearObject($scope.selectedModel);
+						clearObjectViewValue();
 				} else {
-					$scope.selectedModel.splice(0, $scope.selectedModel.length);
+						ngModelCtrl.$setViewValue([]);
 				}
+
 				if (!dontSendEvent) {
 					$scope.externalEvents.onSelectionChanged();
 				}
@@ -374,9 +375,11 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 					finalObj = findObj;
 				}
 
+
 				if ($scope.singleSelection) {
-					clearObject($scope.selectedModel);
-					angular.extend($scope.selectedModel, finalObj);
+
+					ngModelCtrl.$setViewValue(finalObj);
+
 					if (fireSelectionChange) {
 						$scope.externalEvents.onItemSelect(finalObj);
 					}
@@ -384,19 +387,23 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 				} else {
 					dontRemove = dontRemove || false;
 
-					var exists = findIndex($scope.selectedModel, findObj) !== -1;
+					var exists = findIndex(ngModelCtrl.$viewValue, findObj) !== -1;
+					var copy = angular.copy(ngModelCtrl.$viewValue);
 
 					if (!dontRemove && exists) {
-						$scope.selectedModel.splice(findIndex($scope.selectedModel, findObj), 1);
+						copy.splice(findIndex(ngModelCtrl.$viewValue, findObj), 1);
+						ngModelCtrl.$setViewValue(copy);
+
 						$scope.externalEvents.onItemDeselect(findObj);
 						if ($scope.settings.closeOnDeselect) $scope.close();
-					} else if (!exists && ($scope.settings.selectionLimit === 0 || $scope.selectedModel.length < $scope.settings.selectionLimit)) {
-						$scope.selectedModel.push(finalObj);
+					} else if (!exists && ($scope.settings.selectionLimit === 0 || ngModelCtrl.$viewValue.length < $scope.settings.selectionLimit)) {
+						copy.push(finalObj);
+						ngModelCtrl.$setViewValue(copy);
 						if (fireSelectionChange) {
 							$scope.externalEvents.onItemSelect(finalObj);
 						}
 						if ($scope.settings.closeOnSelect) $scope.close();
-						if ($scope.settings.selectionLimit > 0 && $scope.selectedModel.length === $scope.settings.selectionLimit) {
+						if ($scope.settings.selectionLimit > 0 && ngModelCtrl.$viewValue.length === $scope.settings.selectionLimit) {
 							$scope.externalEvents.onMaxSelectionReached();
 						}
 					}
@@ -410,12 +417,12 @@ directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$co
 			$scope.isChecked = function(id) {
 				if ($scope.singleSelection) {
 					if ($scope.settings.externalIdProp === '') {
-						return $scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.idProp]) && $scope.selectedModel[$scope.settings.idProp] === getFindObj(id)[$scope.settings.idProp];
+						return ngModelCtrl.$viewValue !== null && angular.isDefined(ngModelCtrl.$viewValue[$scope.settings.idProp]) && ngModelCtrl.$viewValue[$scope.settings.idProp] === getFindObj(id)[$scope.settings.idProp];
 					}
-					return $scope.selectedModel !== null && angular.isDefined($scope.selectedModel[$scope.settings.externalIdProp]) && $scope.selectedModel[$scope.settings.externalIdProp] === getFindObj(id)[$scope.settings.externalIdProp];
+					return ngModelCtrl.$viewValue !== null && angular.isDefined(ngModelCtrl.$viewValue[$scope.settings.externalIdProp]) && ngModelCtrl.$viewValue[$scope.settings.externalIdProp] === getFindObj(id)[$scope.settings.externalIdProp];
 				}
 
-				return findIndex($scope.selectedModel, getFindObj(id)) !== -1;
+				return findIndex(ngModelCtrl.$viewValue, getFindObj(id)) !== -1;
 			};
 
 			$scope.externalEvents.onInitDone();

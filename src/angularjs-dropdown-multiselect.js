@@ -11,7 +11,7 @@ directiveModule.directive('dmDropdownStaticInclude', ['$compile', function($comp
 	};
 }]);
 
-directiveModule.directive('ngDropdownMultiselect', ['$filter', '$document', '$compile', '$parse', function($filter, $document, $compile, $parse) {
+directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '$compile', '$parse', function($filter, $document, $compile, $parse) {
 	return {
 		restrict: 'AE',
 		require: 'ngModel',

@@ -119,7 +119,7 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 				closeOnBlur: true,
 				displayProp: 'label',
 				idProp: 'id',
-				externalIdProp: 'id',
+				externalIdProp: '',
 				enableSearch: false,
 				selectionLimit: 0,
 				showCheckAll: true,
@@ -259,6 +259,10 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 
 			$scope.getButtonText = function() {
 
+				if (angular.isFunction($scope.settings.smartButtonTextProvider)) {
+					return $scope.settings.smartButtonTextProvider(ngModelCtrl.$viewValue);
+				}
+
 				if ($scope.settings.dynamicTitle && (ngModelCtrl.$viewValue.length > 0 || (angular.isObject(ngModelCtrl.$viewValue) && Object.keys(ngModelCtrl.$viewValue).length > 0))) {
 					if ($scope.settings.smartButtonMaxItems > 0) {
 
@@ -371,6 +375,7 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 
 				if ($scope.settings.externalIdProp === '') {
 					finalObj = find($scope.options, findObj);
+
 				} else {
 					finalObj = findObj;
 				}
@@ -386,7 +391,6 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 					if ($scope.settings.closeOnSelect || $scope.settings.closeOnDeselect) $scope.close();
 				} else {
 					dontRemove = dontRemove || false;
-
 					var exists = findIndex(ngModelCtrl.$viewValue, findObj) !== -1;
 					var copy = angular.copy(ngModelCtrl.$viewValue);
 

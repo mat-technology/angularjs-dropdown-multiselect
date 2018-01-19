@@ -326,7 +326,9 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 			};
 
 			ngModelCtrl.$render = function() {
+
 				if (!ngModelCtrl.$viewValue) {
+					$scope.selectedLength = 0;
 					return;
 				}
 				$scope.selectedLength = ngModelCtrl.$viewValue.length;
@@ -422,6 +424,11 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 			};
 
 			$scope.isChecked = function(id) {
+
+//				if (ngModelCtrl.$viewValue == null) {
+//					return false;
+//				}
+
 				if ($scope.singleSelection) {
 					if ($scope.settings.externalIdProp === '') {
 						return ngModelCtrl.$viewValue !== null && angular.isDefined(ngModelCtrl.$viewValue[$scope.settings.idProp]) && ngModelCtrl.$viewValue[$scope.settings.idProp] === getFindObj(id)[$scope.settings.idProp];

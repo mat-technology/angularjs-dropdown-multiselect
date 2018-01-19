@@ -406,7 +406,13 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 						$scope.externalEvents.onItemDeselect(findObj);
 						if ($scope.settings.closeOnDeselect) $scope.close();
 					} else if (!exists && ($scope.settings.selectionLimit === 0 || ngModelCtrl.$viewValue.length < $scope.settings.selectionLimit)) {
+
+						if (!copy) {
+							// copy is null
+							copy = []
+						}
 						copy.push(finalObj);
+						
 						ngModelCtrl.$setViewValue(copy);
 						if (fireSelectionChange) {
 							$scope.externalEvents.onItemSelect(finalObj);
@@ -425,9 +431,9 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 
 			$scope.isChecked = function(id) {
 
-//				if (ngModelCtrl.$viewValue == null) {
-//					return false;
-//				}
+				if (ngModelCtrl.$viewValue == null) {
+					return false;
+				}
 
 				if ($scope.singleSelection) {
 					if ($scope.settings.externalIdProp === '') {
@@ -618,6 +624,10 @@ function find(collection, properties) {
 function findIndex(collection, properties) {
 	var index = -1;
 	var counter = -1;
+
+	if (!collection) {
+		return index;
+	}
 
 	collection.some(function(object) {
 		var hasAllSameProperties = true;

@@ -326,6 +326,9 @@ directiveModule.directive('ngMatDropdownMultiselect', ['$filter', '$document', '
 			};
 
 			ngModelCtrl.$render = function() {
+				if (!ngModelCtrl.$viewValue) {
+					return;
+				}
 				$scope.selectedLength = ngModelCtrl.$viewValue.length;
 			};
 
